@@ -1,0 +1,90 @@
+// ===== PRODUCT ROUTES (product.route.js) =====
+import express from "express";
+import {
+  createProduct,
+  createMultipleProducts,
+  getAllProducts,
+  getSingleProduct,
+  getUserProducts,
+  addProductReview,
+  updateProductReview,
+  deleteProductReview,
+  markReviewHelpful,
+  updateProduct,
+  deleteProduct,
+  handleProductErrors,
+  getEcoZoneProducts,
+  getSingleecoProduct,
+} from "../controllers/product.controller.js";
+import { searchProducts } from "../controllers/product.controller.js";
+
+
+import { isAuthenticated } from "../middlewares/isAuthenticated.js";
+import {
+  productImageUpload,
+  cleanupFiles,
+  handleMulterError,
+} from "../middlewares/multer.js";
+import {
+  validateReviewInput,
+  validateProductInput,
+} from "../middlewares/validation.js";
+
+const router = express.Router();
+
+/* ======================
+   📌 PUBLIC ROUTES
+====================== */
+// Anyone can view products
+router.get("/search", searchProducts);   // <-- move this up
+router.get("/", getAllProducts);
+router.get("/user/:userId", getUserProducts); // must come before /:id
+router.get('/ecozone', getEcoZoneProducts); 
+router.get('/:id', getSingleProduct);
+router.get("/ecozone/:id",getSingleecoProduct);
+
+/* ======================
+   🔒 AUTHENTICATED ROUTES
+====================== */
+router.use(isAuthenticated);
+
+// --- Product CRUD ---
+router.post(
+  "/create",
+  productImageUpload.array("images", 10),
+  handleMulterError,
+  cleanupFiles,
+  validateProductInput,
+  createProduct
+);
+
+router.post(
+  "/bulk-create",
+  productImageUpload.any(),
+  handleMulterError,
+  cleanupFiles,
+  createMultipleProducts
+);
+
+router.put(
+  "/:id",
+  productImageUpload.array("images", 10),
+  handleMulterError,
+  cleanupFiles,
+  updateProduct
+);
+
+router.delete("/:id", deleteProduct);
+
+// --- Product Reviews ---
+router.post("/:id/reviews", validateReviewInput, addProductReview);
+router.put("/:id/reviews/:reviewId", validateReviewInput, updateProductReview);
+router.delete("/:id/reviews/:reviewId", deleteProductReview);
+router.post("/:id/reviews/:reviewId/helpful", markReviewHelpful);
+
+/* ======================
+   ⚠️ ERROR HANDLER
+====================== */
+router.use(handleProductErrors);
+
+export default router;
